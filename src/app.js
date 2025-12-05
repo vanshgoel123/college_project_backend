@@ -12,8 +12,8 @@ app.use(cors({
 
 }))
 
-app.use(express.json({limit:'16kb'}))
-app.use(express.urlencoded({extended:true,limit:'16kb'}))
+app.use(express.json({limit:'20mb'}));
+app.use(express.urlencoded({extended:true, limit:'20mb'}));
 app.use(express.static("public"))
 app.use(cookie()) //global middleware hai ye. har req mei cookie as header bhejta hai
 
