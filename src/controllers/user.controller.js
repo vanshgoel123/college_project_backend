@@ -1,12 +1,671 @@
-import {User} from "../models/user.model.js";
+// import {User} from "../models/user.model.js";
+// import { asynchandler } from "../utilities/asynchandler.js";
+// import { ApiError } from "../utilities/ApiError.js";
+// import { ApiResponse } from "../utilities/ApiResponse.js";
+// import jwt from "jsonwebtoken"
+// import { upload } from "../utilities/Cloudinary.js";
+// import { upload_mul } from "../middlewares/multer.middleware.js";
+// import cookie from "cookie-parser";
+// import { app } from "../app.js";
+// import mongoose from "mongoose";
+// import { verifyGoogleToken } from "../utilities/googleauth.js";
+// import { authorScholarApi } from "../utilities/scholar.js";
+// import { Paper } from "../models/paper.model.js";
+// import generateTags from "../utilities/getTag.js";
+// import classifyPaper from "../utilities/classifyPaper.js";
+
+// const generateAccessRefershTokens = async function(_id){
+//   try{
+//     /** @type {import("../models/user.model.js").User} */
+//     const user = await User.findById(_id)
+//     const refreshToken = user.generateRefreshToken()
+//     const accessToken = user.generateAccessToken()
+//       // console.log("accessToken " , accessToken ,"refreshToken-->", refreshToken)
+//     if (!accessToken || !refreshToken) throw new ApiError(400, "tokens not generated in the method")
+//     user.refreshToken = refreshToken
+//     await user.save({validateBeforeSave:false})
+//     return {
+//       accessToken:accessToken,
+//       refreshToken:refreshToken
+//     }
+
+
+
+
+//   }catch (e) {
+//     throw new ApiError(400 , "tokens not generated in the function")
+//   }
+// }
+
+// const register_user = asynchandler(async (req , res )=>{
+
+//   const {fullName , username, password , email, department,isAdmin , researchInterest ,designation}=req.body
+//   if ([fullName , username, password , email, department,isAdmin,researchInterest ,designation].some((item)=>{
+//     if (item) {
+//       if (!item.trim()) return true
+//     }
+//     return !item
+//   })) throw new ApiError(400 , "all fields are required")
+//   let bool_isAdmin = (typeof isAdmin === "string")
+//     ? JSON.parse(isAdmin.toLowerCase())
+//     : Boolean(isAdmin);
+
+//   if (!email.includes("@iiitnr.edu.in")) throw new ApiError(400, "enter the administered college email")
+
+//   const exists = await User.findOne({
+//     $or:[{username} , {email}]
+//   })
+//   if(exists) throw new ApiError(400, "user already exists please login")
+//   if(bool_isAdmin && email !== process.env.ADMIN_EMAIL_CHECK) throw new ApiError(401 , "you are not allowed to register as admin")
+
+//  const local_path_avatar = req?.files?.avatar[0]?.path
+//   if (!local_path_avatar) throw new ApiError(401, "multer didnt upload avatar")
+//   const local_path_coverImage = req?.files?.coverImage[0].path
+//   if (!local_path_coverImage) throw new ApiError(401, "multer didnt upload coverImage")
+
+//   const upload_avatar =await  upload(local_path_avatar)
+//   if ( !upload_avatar.url) throw new ApiError(401 , "avatar cloudinary error")
+//   const upload_coverImage =await  upload(local_path_coverImage)
+//   if ( !upload_coverImage.url) throw new ApiError(401 , "coverImage cloudinary error")
+//   const array =[]
+//   researchInterest.split(",").forEach((item)=>{
+//     if (item.trim()) array.push(item.trim())
+//   })
+//   if (array.length===0) throw new ApiError(400 , "add some research interest")
+
+//   const user =await User.create({
+//     username:username,
+//     fullName:fullName,
+//     avatar:upload_avatar.url || "",
+//     coverImage:upload_coverImage.url||"",
+//     email:email,
+//     department:department,
+//     isAdmin:bool_isAdmin,
+//     password:password,
+//     researchInterests:array,
+//     designation:designation
+//   })
+//   const response = await User.findById(user._id).select("-password -refreshToken")
+
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, response, "user created"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+// })
+// const login_user = asynchandler(async (req , res ,_)=>{
+//   const {email , password} = req.body
+//   if (!email.trim() || !password) throw new ApiError(401 , "enter full details")
+
+//   /** @type {import("../models/user.model.js").User} */
+
+//   const user = await User.findOne({
+//     email
+//   });
+//   if (!user) throw new ApiError(401 , "please register")
+
+//   /** @type {import("../models/user.model.js").User} */
+//   const isCorrect = await user.isPasswordCorrect(password)
+//   if (!isCorrect) throw new ApiError(401 , "password is wrong")
+//   const {accessToken , refreshToken} = await generateAccessRefershTokens(user._id)
+//   const options = {
+//     httpOnly: true,
+//     secure: false,    // HTTP server
+//     sameSite: "lax",
+//     path: "/",
+//     maxAge: 7 * 24 * 60 * 60 * 1000
+//   }
+//   if (user.isAdmin) {
+//     return res
+//       .status(200)
+//       .cookie("accessToken", accessToken, options)
+//       .cookie("refreshToken", refreshToken, options)
+//       .json(new ApiResponse(200, {
+//         user: user,
+//         accessToken: accessToken,
+//         refreshToken: refreshToken
+//       }, "logged in as admin"))
+//   }
+//   else {return res
+//     .status(200)
+//     .cookie("accessToken", accessToken, options)
+//     .cookie("refreshToken", refreshToken, options)
+//     .json(new ApiResponse(200, {
+//       user: user,
+//       accessToken: accessToken,
+//       refreshToken: refreshToken
+//     }, "logged in as user"))
+
+//   }
+
+
+
+// })
+// const googleAuthLogin = asynchandler(async (req,res)=>{
+//   const {idToken_name , idToken_email} = req.body
+// if (!idToken_email || !idToken_name) throw new ApiError(400 , "google never sent token")
+//   const payload_email =await  verifyGoogleToken(idToken_email)
+//   const payload_name = await verifyGoogleToken(idToken_name)
+//   if (!payload_name) throw new ApiError(400 , "google didnt verify name")
+//   if (!payload_email) throw new ApiError(400 , "google didnt verify_email")
+//   const {email} = payload_email
+//   const {name , picture} = payload_name
+//   if (!email || !name) throw new ApiError(400 , "google didnt send email or name")
+//   if (!email.includes("@iiitnr.edu.in")) throw new ApiError(400, "enter the administered college email")
+
+
+
+
+
+//   /** @type {import("../models/user.model.js").User} */
+//   const user = await User.findOne({
+//     email:email
+//   }).select("-password -refreshToken")
+
+
+//   if (!user) {
+//     const created =await  User.create({
+//       fullName:name,
+//       email:email,
+//       username:email.split("@")[0] + "101",
+//       avatar:picture || "",
+//     })
+//     if (!created) throw new ApiError(400 , "user not created")
+
+//   if(created?.email === process.env.ADMIN_EMAIL_CHECK) {
+//     created.isAdmin = true
+//     await created.save({validateBeforeSave:false})
+//   }
+//     const cookieOptions = {
+//   httpOnly: true,
+//   secure: false,
+//   sameSite: "lax",
+//   path: "/",
+//   maxAge: 7 * 24 * 60 * 60 * 1000
+// };
+
+//     const {accessToken,refreshToken} =await generateAccessRefershTokens(created._id)
+
+//     if (!accessToken || !refreshToken) throw new ApiError(400, "tokens not generated")
+//     return res
+//       .status(200)
+//       .cookie("accessToken" , accessToken , option)
+//       .cookie("refreshToken" , refreshToken,option)
+//       .json(new ApiResponse(200,created , "logged in "))
+
+
+
+
+
+//   }
+//   const cookieOptions = {
+//   httpOnly: true,
+//   secure: false,
+//   sameSite: "lax",
+//   path: "/",
+//   maxAge: 7 * 24 * 60 * 60 * 1000
+// };
+
+
+//   const {accessToken,refreshToken} = await generateAccessRefershTokens(user._id)
+//   // console.log("accessToken " , accessToken ,"refreshToken-->", refreshToken)
+//   if (!accessToken || !refreshToken) throw new ApiError(400, "tokens not generated")
+//   return res
+//     .status(200)
+//     .cookie("accessToken" , accessToken , options)
+//     .cookie("refreshToken" , refreshToken,options)
+//     .json(new ApiResponse(200,user , "logged in "))
+
+
+
+
+// })
+// const completeProfile = asynchandler(async (req , res)=>{
+//   /** @type {import("../models/user.model.js").User} */
+
+//   console.log("req.files-->" , req.files)
+
+//   const {department , isAdmin , researchInterest ,designation} = req.body
+//   if (!department || !department.trim()|| !isAdmin || !isAdmin.trim() || !researchInterest|| !researchInterest.trim()) throw new ApiError(400 , "add details")
+
+
+//   const local_path_coverimage = req?.file?.path
+//   if (!local_path_coverimage) throw new ApiError(400 , "coverImage not fetched from multer")
+
+//   const onCloud_coverImage = await upload(local_path_coverimage)
+
+
+//   if (!onCloud_coverImage.url) throw new ApiError(400 , "coverImage not uploaded on cloudinary")
+//   const bool_isAdmin = (typeof isAdmin === "string")
+//     ? JSON.parse(isAdmin.toLowerCase())
+//     : Boolean(isAdmin);
+//   const array =[]
+//   researchInterest.split(",").forEach((item)=>{
+//     if (item.trim()) array.push(item.trim())
+//   })
+//   if (array.length===0) throw new ApiError(400 , "add some research interest")
+//   const user = await User.findByIdAndUpdate(req.user._id, {
+//     $set:{
+//       department:department,
+//       isAdmin:bool_isAdmin,
+//       coverImage:onCloud_coverImage?.url || "",
+//       researchInterests:array,
+//       designation:designation
+//     }
+//   } ,{new:true})
+//   if (!user) throw new ApiError(400 , "profile not completed")
+//  return  res.status(200)
+//     .json(new ApiResponse(200,user , "profile updated"))
+
+
+// })
+
+
+// const  setPassword = asynchandler(async (req,res,next)=> {
+//   const { new_password, confirm_password } = req.body
+//   if (!new_password.trim() || !confirm_password.trim()) throw new ApiError(401, "np empty strings")
+//   if (new_password !== confirm_password) throw new ApiError(400, "doest match with the confirm password")
+//   const user = await User.findById(req?.user?._id)
+//   if (!user) throw new ApiError(400, "user not fetched ")
+//   user.password = new_password
+//   await user.save({ validateBeforeSave: false })
+//   return res.status(200)
+//     .json(new ApiResponse(200, {}, "password set"))
+// })
+
+
+// const logout= asynchandler(async (req,res,_)=>{
+// const user =await User.findByIdAndUpdate(req?.user?._id , {
+//   // $set:{
+//   //   refreshToken:undefined
+//   // }
+//   $unset: { refreshToken: 1 }
+// } , {new:true}).select("-password")
+//   const options = {
+//   httpOnly: true,
+//   secure: false,
+//   sameSite: "lax",
+//   path: "/",           // VERY IMPORTANT
+//   maxAge: 7 * 24 * 60 * 60 * 1000
+//   }
+//   return res.status(200)
+//     .clearCookie("accessToken", { path: "/", sameSite: "lax" })
+//     .clearCookie("refreshToken", { path: "/", sameSite: "lax" })
+//     .json(new ApiResponse(200 , user , "logged out successfully"))
+
+
+
+// })
+// const getUser =asynchandler(async (req , res )=>{
+//   const user = await User.findById(req?.user?._id).select("-password -refreshToken")
+//   return res.status(200).json(new ApiResponse(200 , user , "here are your details"))
+// })
+// const changePassword = asynchandler(async (req , res)=>{
+//   const {original_password , new_password , confirm_password}  = req.body
+//   if (!original_password.trim()||!new_password.trim() ||!confirm_password.trim()) throw new ApiError(401 , "np empty strings")
+//   if (new_password!==confirm_password) throw new ApiError(400 , "doest match with the confirm password")
+
+//   /** @type {import("../models/user.model.js").User} */
+
+
+//   const user= await User.findById(req?.user?._id)
+//   if (!user)  throw new ApiError(400 , "user not fetched ")
+//   if (!(await user.isPasswordCorrect(original_password)))  throw new ApiError(400 , "password wrong")
+//   user.password = new_password
+//   user.save({validateBeforeSave:false})
+//   return res.status(200)
+//     .json(new ApiResponse(200 ,{} , "password changed"))
+
+// })
+// const refreshAccessTokens = asynchandler(async (req,res)=>{
+//   /** @type {import("../models/user.model.js").User} */
+
+//   const user = await User.findById(req.user._id).select('-password')
+//   if (!user) throw new ApiError(401, "user no no no")
+//   const token = req.cookies.refreshToken || req.body.refreshToken
+//   if (!token) throw new ApiError(401, "noo token")
+//   if (token !== user.refreshToken) throw new ApiError(500, "maslaa")
+//   const { accessToken, refreshToken } = await generateAccessRefershTokens(req.user._id)
+
+//  const options = {
+//   httpOnly: true,
+//   secure: false,
+//   sameSite: "lax",
+//   path: "/"
+// };
+
+//   return res
+//     .status(200)
+//     .cookie("accessToken", accessToken, options)
+//     .cookie("refreshToken", refreshToken, options)
+//     .json(new ApiResponse(200, {
+//       user: user,
+//       new_accessToken: accessToken,
+//       new_refreshToken: refreshToken
+//     }, "cookies updated"))
+
+
+
+
+
+// })
+// const updateUserProfile = asynchandler(async (req,res)=>{
+//   const {new_email,new_username} = req.body
+//   if (!new_email.trimEnd() || !new_username.trim()) throw new ApiError(401 , "user please enter something")
+//   if (!new_email.includes("@iiitnr.edu.in")) throw new ApiError(400, "enter the administered college email")
+
+//   /** @type {import("../models/user.model.js").User} */
+
+//   const user = await User.findByIdAndUpdate(req.user._id ,{
+
+//     $set:{
+//       email:new_email,
+//       username:new_username
+//     }
+//   },{new:true})
+
+//   return res.status(200)
+//     .json(new ApiResponse(200 , user , "updated details"))
+
+
+
+
+
+// })
+
+// const updateAvatar = asynchandler(async (req,res)=>{
+//   const local_path = req?.file?.path
+//   if (!local_path) throw new ApiError(401 , "path not found")
+//   const upload_ = await upload(local_path)
+//   if (!upload_.url) throw new ApiError(401 , "not uploaded")
+
+//   /** @type {import("../models/user.model.js").User} */
+
+//   const user = await User.findByIdAndUpdate(req.user._id , {
+//     $set:{
+//       avatar:upload_.url
+//     }
+//   },{new:true})
+//   if (!user) throw new ApiError(400,"user not fetched")
+//   console.log("user new avatar-->",user.avatar)
+//   return res.status(200).json(new ApiResponse(200 , user , "avatar updated"))
+
+
+// })
+
+// const updateCoverImage = asynchandler(async (req,res)=>{
+//   const local_path_ = req?.file?.path
+//   if (!local_path_) throw new ApiError(401 , "path not found")
+//   const upload_cover = await upload(local_path_)
+//   if (!upload_cover.url) throw new ApiError(401 , "not uploaded")
+
+//   /** @type {import("../models/user.model.js").User} */
+
+//   const user = await User.findByIdAndUpdate(req.user._id , {
+//     $set:{
+//       coverImage:upload_cover.url
+//     }
+//   },{new:true})
+//   if (!user) throw new ApiError(400,"user not fetched")
+//   return res.status(200).json(new ApiResponse(200 , user , "avatar updated"))
+
+
+// })
+// const deleteUser = asynchandler(async (req,res,next)=>{
+//   const user = await User.findByIdAndDelete(req.user._id)
+//   if (!user) throw new ApiError(401 , "sorry....user not deleted")
+
+//   res.status(200)
+//     .clearCookie("accessToken")
+//     .clearCookie("refreshToken")
+//     .json(new  ApiResponse(200,{},"logged out and deleted"))
+
+// })
+// const report = asynchandler(async (req,res)=>{
+//   const {title = false ,authors =false, tag =false , publishedBy =false, publishedDate=false ,  citedBy=false} = req.body
+//   const projectObject ={}
+//   if (title === false) throw  new ApiError(400 , "naah")
+//   if (title === true) {
+//     projectObject.title = 1;
+//   }
+//   if (authors === true) {
+//     projectObject.authors = 1;
+//   }
+//   if (tag === true) {
+//     projectObject.tag = 1;
+//   }
+//   if (publishedBy === true) {
+//     projectObject.publishedBy = 1;
+//   }
+//   if (publishedDate === true) {
+//     projectObject.publishedDate = 1;
+//   }
+//   if (citedBy === true) {
+//     projectObject.citedBy = 1;
+//   }
+//   projectObject.link =1
+//   projectObject.manualUpload =1
+
+//   const paperReport = await User.aggregate([{
+//     $match:{
+//       _id: new  mongoose.Types.ObjectId(req.user._id)
+//     }
+//   },{
+//     $lookup:{
+//       from:"paper",
+//       localField:"_id",
+//       foreignField:"owner",
+//       pipeline:[{
+//         $addFields:{
+//           link:{
+//             $cond:{
+//               if: {
+//                 $and: [
+//                   { $ne: ["$link", null] },
+//                   { $ne: ["$link", ""] }
+//                 ]
+//               },
+//               then:"$link",
+//               else:"$$REMOVE"
+//             }
+
+//           },
+//           manualUpload:{
+//             $cond:{
+//               if: {
+//                 $and: [
+//                   { $ne: ["$manualUpload", null] },
+//                   { $ne: ["$manualUpload", ""] }
+//                 ]
+//               },
+//               then:"$manualUpload",
+//               else:"$$REMOVE"
+//             }
+
+//           }
+//         }
+//       },{
+//         $project:projectObject
+
+//       }],
+
+//       as:"details",
+
+
+//     }
+//   },{
+//     $addFields:{
+//       count:{
+//         $size:"$details"
+//       }
+
+
+
+//     }
+//   },{
+//     $project:{
+//       details:1,
+//       count:1
+//     }
+//   }])
+//   if (paperReport.length === 0 || paperReport[0].details.length === 0) throw new ApiError(400 , "report not generated")
+//   return res.status(200)
+//     .json(new ApiResponse(200 , paperReport[0], "report generated"))
+
+
+// })
+
+// const getAuthorScholar = asynchandler(async (req , res)=>{
+//   const {authorId} = req.body
+//   if(!authorId.trim()) throw new ApiError(400 , "please enter author id")
+
+
+//   const response = await authorScholarApi(authorId)
+
+
+//   if(!response) throw new ApiError(400 , "cant fetch author info");
+//   const {stats , papers , author} = response
+
+//   if(!papers || papers.length === 0 ) throw new ApiError(500 , "papers can be fetched")
+
+
+//   for(let i  =0  ; i<papers.length ; i++) {
+//     const exists = await Paper.findOne({
+//       link:papers[i].link,
+//       owner:req?.user?._id
+//     })
+//     if(exists) continue;
+
+//     const authors = []
+//     papers[i]?.authors.split(",").forEach(a => {
+//       if (a.trim() !== "") authors.push(a.trim())
+//     })
+//     let classifiedAs =  "conference"
+//     const verdict = classifyPaper({
+//       title: papers[i]?.title || "",
+//       publication: papers[i]?.publication || ""
+//     })
+//     if(verdict !== "Other / Unknown") classifiedAs = verdict
+
+//     const tags = []
+//     generateTags(papers[i]?.title || "" ).forEach(tag => {
+//       if (tag.trim() !== "") tags.push(tag.trim().toLowerCase())
+//     })
+//     generateTags(papers[i]?.publication || "" ).forEach(tag => {
+//       if (tag.trim() !== "" && !tags.includes(tag.trim())) tags.push(tag.trim().toLowerCase())
+//     })
+
+
+
+
+
+
+//     try {
+//       const paper = await Paper.create({
+//         title: papers[i]?.title  ,
+//         link: papers[i]?.link,
+//         authors: authors,
+//         citedBy: papers[i]?.cited_by?.value,
+//         publishedBy: papers[i]?.publication,
+//         publishedDate: new Date(Number(papers[i]?.year),0) || new Date(),
+//         classifiedAs: classifiedAs,
+//         tag: tags,
+//         owner: req?.user?._id
+
+
+//       })
+
+//       if(!paper) throw new ApiError(500 , "paper not stored")
+
+
+//     } catch (e){
+//       throw new ApiError(500, `mongoDb error---->${e.message}`)
+
+//     }
+//   }
+
+//   const userUpdate = await User.findByIdAndUpdate(req.user._id , {
+//     $set:{
+//       userBio:author,
+//       userStats:stats
+//     }
+//   } , {new:true})
+//   if (!userUpdate) throw new ApiError(500 , "user bio not updated")
+
+
+
+//   return res.status(200).json(new ApiResponse(200 , {
+//     stats:stats,
+//     paperCount: papers.length,
+//     author: author
+//   } , `all papers of ${author.name} have been stored in the database`))
+
+
+
+
+
+
+
+
+
+// })
+
+
+// const getAuthorId = asynchandler(async (req,res)=>{
+
+//   const {url} = req.body;
+
+//   if (!url || typeof url !== "string") {
+//     throw new ApiError(400, "URL is required in request body");
+//   }
+
+
+
+//     const parsedUrl = new URL(url);
+//     const authorId = parsedUrl.searchParams.get("user");
+
+//     if (!authorId) {
+//       throw new ApiError(400, "Author ID not found in provided URL");
+//     }
+
+//     return res.status(200).json(
+//       new ApiResponse(
+//         200,
+//         { authorId },
+//         "Author ID extracted successfully"
+//       )
+//     );
+
+
+
+
+// })
+
+
+// export { getAuthorId,  register_user , login_user , logout , getUser , changePassword , refreshAccessTokens,updateUserProfile,updateAvatar,updateCoverImage,deleteUser , report , googleAuthLogin , completeProfile , setPassword , getAuthorScholar}
+
+
+
+
+// src/controllers/user.controller.js
+import { User } from "../models/user.model.js";
 import { asynchandler } from "../utilities/asynchandler.js";
 import { ApiError } from "../utilities/ApiError.js";
 import { ApiResponse } from "../utilities/ApiResponse.js";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 import { upload } from "../utilities/Cloudinary.js";
 import { upload_mul } from "../middlewares/multer.middleware.js";
-import cookie from "cookie-parser";
-import { app } from "../app.js";
 import mongoose from "mongoose";
 import { verifyGoogleToken } from "../utilities/googleauth.js";
 import { authorScholarApi } from "../utilities/scholar.js";
@@ -14,628 +673,564 @@ import { Paper } from "../models/paper.model.js";
 import generateTags from "../utilities/getTag.js";
 import classifyPaper from "../utilities/classifyPaper.js";
 
-const generateAccessRefershTokens = async function(_id){
-  try{
-    /** @type {import("../models/user.model.js").User} */
-    const user = await User.findById(_id)
-    const refreshToken = user.generateRefreshToken()
-    const accessToken = user.generateAccessToken()
-      // console.log("accessToken " , accessToken ,"refreshToken-->", refreshToken)
-    if (!accessToken || !refreshToken) throw new ApiError(400, "tokens not generated in the method")
-    user.refreshToken = refreshToken
-    await user.save({validateBeforeSave:false})
+/**
+ * Helper: generate access + refresh tokens and persist refresh token to user
+ */
+const generateAccessRefershTokens = async function (_id) {
+  try {
+    const user = await User.findById(_id);
+    if (!user) throw new Error("user not found for token generation");
+
+    const refreshToken = user.generateRefreshToken();
+    const accessToken = user.generateAccessToken();
+
+    if (!accessToken || !refreshToken) throw new ApiError(400, "tokens not generated in the method");
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
     return {
-      accessToken:accessToken,
-      refreshToken:refreshToken
-    }
-
-
-
-
-  }catch (e) {
-    throw new ApiError(400 , "tokens not generated in the function")
+      accessToken,
+      refreshToken,
+    };
+  } catch (e) {
+    throw new ApiError(400, "tokens not generated in the function");
   }
-}
+};
 
-const register_user = asynchandler(async (req , res )=>{
+/**
+ * Cookie options used for all login responses
+ * - secure=false because your server is HTTP. Change to true in prod (HTTPS).
+ */
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: false, // change to true when using HTTPS
+  sameSite: "lax",
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+};
 
-  const {fullName , username, password , email, department,isAdmin , researchInterest ,designation}=req.body
-  if ([fullName , username, password , email, department,isAdmin,researchInterest ,designation].some((item)=>{
-    if (item) {
-      if (!item.trim()) return true
-    }
-    return !item
-  })) throw new ApiError(400 , "all fields are required")
-  let bool_isAdmin = (typeof isAdmin === "string")
-    ? JSON.parse(isAdmin.toLowerCase())
-    : Boolean(isAdmin);
+/**
+ * register_user
+ */
+const register_user = asynchandler(async (req, res) => {
+  const { fullName, username, password, email, department, isAdmin, researchInterest, designation } = req.body;
 
-  if (!email.includes("@iiitnr.edu.in")) throw new ApiError(400, "enter the administered college email")
+  if (
+    [fullName, username, password, email, department, isAdmin, researchInterest, designation].some((item) => {
+      if (item) {
+        if (!item.trim()) return true;
+      }
+      return !item;
+    })
+  )
+    throw new ApiError(400, "all fields are required");
+
+  let bool_isAdmin =
+    typeof isAdmin === "string" ? JSON.parse(isAdmin.toLowerCase()) : Boolean(isAdmin);
+
+  if (!email.includes("@iiitnr.edu.in")) throw new ApiError(400, "enter the administered college email");
 
   const exists = await User.findOne({
-    $or:[{username} , {email}]
-  })
-  if(exists) throw new ApiError(400, "user already exists please login")
-  if(bool_isAdmin && email !== process.env.ADMIN_EMAIL_CHECK) throw new ApiError(401 , "you are not allowed to register as admin")
-
- const local_path_avatar = req?.files?.avatar[0]?.path
-  if (!local_path_avatar) throw new ApiError(401, "multer didnt upload avatar")
-  const local_path_coverImage = req?.files?.coverImage[0].path
-  if (!local_path_coverImage) throw new ApiError(401, "multer didnt upload coverImage")
-
-  const upload_avatar =await  upload(local_path_avatar)
-  if ( !upload_avatar.url) throw new ApiError(401 , "avatar cloudinary error")
-  const upload_coverImage =await  upload(local_path_coverImage)
-  if ( !upload_coverImage.url) throw new ApiError(401 , "coverImage cloudinary error")
-  const array =[]
-  researchInterest.split(",").forEach((item)=>{
-    if (item.trim()) array.push(item.trim())
-  })
-  if (array.length===0) throw new ApiError(400 , "add some research interest")
-
-  const user =await User.create({
-    username:username,
-    fullName:fullName,
-    avatar:upload_avatar.url || "",
-    coverImage:upload_coverImage.url||"",
-    email:email,
-    department:department,
-    isAdmin:bool_isAdmin,
-    password:password,
-    researchInterests:array,
-    designation:designation
-  })
-  const response = await User.findById(user._id).select("-password -refreshToken")
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, response, "user created"))
-
-
-
-
-
-
-
-
-
-
-
-
-
-})
-const login_user = asynchandler(async (req , res ,_)=>{
-  const {email , password} = req.body
-  if (!email.trim() || !password) throw new ApiError(401 , "enter full details")
-
-  /** @type {import("../models/user.model.js").User} */
-
-  const user = await User.findOne({
-    email
+    $or: [{ username }, { email }],
   });
-  if (!user) throw new ApiError(401 , "please register")
+  if (exists) throw new ApiError(400, "user already exists please login");
+  if (bool_isAdmin && email !== process.env.ADMIN_EMAIL_CHECK) throw new ApiError(401, "you are not allowed to register as admin");
 
-  /** @type {import("../models/user.model.js").User} */
-  const isCorrect = await user.isPasswordCorrect(password)
-  if (!isCorrect) throw new ApiError(401 , "password is wrong")
-  const {accessToken , refreshToken} = await generateAccessRefershTokens(user._id)
-  const options = {
-    http:true,
-    secure:true
-  }
-  user.refreshToken = ""
-  user.password = ""
+  const local_path_avatar = req?.files?.avatar?.[0]?.path;
+  if (!local_path_avatar) throw new ApiError(401, "multer didnt upload avatar");
+  const local_path_coverImage = req?.files?.coverImage?.[0]?.path;
+  if (!local_path_coverImage) throw new ApiError(401, "multer didnt upload coverImage");
 
-  if (user.isAdmin) {
-    res
-      .status(200)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", refreshToken, options)
-      .json(new ApiResponse(200, {
-        user: user,
-        accessToken: accessToken,
-        refreshToken: refreshToken
-      }, "logged in as admin"))
-  }
-  return res
-    .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(new ApiResponse(200, {
-      user: user,
-      accessToken: accessToken,
-      refreshToken: refreshToken
-    }, "logged in as user"))
+  const upload_avatar = await upload(local_path_avatar);
+  if (!upload_avatar?.url) throw new ApiError(401, "avatar cloudinary error");
+  const upload_coverImage = await upload(local_path_coverImage);
+  if (!upload_coverImage?.url) throw new ApiError(401, "coverImage cloudinary error");
 
+  const array = [];
+  researchInterest.split(",").forEach((item) => {
+    if (item.trim()) array.push(item.trim());
+  });
+  if (array.length === 0) throw new ApiError(400, "add some research interest");
 
+  const user = await User.create({
+    username,
+    fullName,
+    avatar: upload_avatar.url || "",
+    coverImage: upload_coverImage.url || "",
+    email,
+    department,
+    isAdmin: bool_isAdmin,
+    password,
+    researchInterests: array,
+    designation,
+  });
 
+  const response = await User.findById(user._id).select("-password -refreshToken");
+  return res.status(200).json(new ApiResponse(200, response, "user created"));
+});
 
+/**
+ * login_user
+ */
+const login_user = asynchandler(async (req, res, _) => {
+  const { email, password } = req.body;
+  if (!email || !email.trim() || !password) throw new ApiError(401, "enter full details");
 
-})
-const googleAuthLogin = asynchandler(async (req,res)=>{
-  const {idToken_name , idToken_email} = req.body
-if (!idToken_email || !idToken_name) throw new ApiError(400 , "google never sent token")
-  const payload_email =await  verifyGoogleToken(idToken_email)
-  const payload_name = await verifyGoogleToken(idToken_name)
-  if (!payload_name) throw new ApiError(400 , "google didnt verify name")
-  if (!payload_email) throw new ApiError(400 , "google didnt verify_email")
-  const {email} = payload_email
-  const {name , picture} = payload_name
-  if (!email || !name) throw new ApiError(400 , "google didnt send email or name")
-  if (!email.includes("@iiitnr.edu.in")) throw new ApiError(400, "enter the administered college email")
+  const user = await User.findOne({ email });
+  if (!user) throw new ApiError(401, "please register");
 
+  const isCorrect = await user.isPasswordCorrect(password);
+  if (!isCorrect) throw new ApiError(401, "password is wrong");
 
+  const { accessToken, refreshToken } = await generateAccessRefershTokens(user._id);
 
+  // create a clean user object without sensitive fields
+  const cleanUser = await User.findById(user._id).select("-password -refreshToken");
 
+  // Reset any in-memory password / refreshToken values for safety
+  user.refreshToken = "";
+  user.password = "";
 
-  /** @type {import("../models/user.model.js").User} */
-  const user = await User.findOne({
-    email:email
-  }).select("-password -refreshToken")
-
-
-  if (!user) {
-    const created =await  User.create({
-      fullName:name,
-      email:email,
-      username:email.split("@")[0] + "101",
-      avatar:picture || "",
-    })
-    if (!created) throw new ApiError(400 , "user not created")
-
-  if(created?.email === process.env.ADMIN_EMAIL_CHECK) {
-    created.isAdmin = true
-    await created.save({validateBeforeSave:false})
-  }
-    const option = {
-      http:true,
-      secure:true
-    }
-    const {accessToken,refreshToken} =await generateAccessRefershTokens(created._id)
-
-    if (!accessToken || !refreshToken) throw new ApiError(400, "tokens not generated")
+  // If admin, return admin message, else normal user
+  if (cleanUser?.isAdmin) {
     return res
       .status(200)
-      .cookie("accessToken" , accessToken , option)
-      .cookie("refreshToken" , refreshToken,option)
-      .json(new ApiResponse(200,created , "logged in "))
-
-
-
-
-
+      .cookie("accessToken", accessToken, COOKIE_OPTIONS)
+      .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
+      .json(
+        new ApiResponse(
+          200,
+          { user: cleanUser, accessToken, refreshToken },
+          "logged in as admin"
+        )
+      );
   }
-  const options = {
-    http:true,
-    secure:true
-  }
-  const {accessToken,refreshToken} = await generateAccessRefershTokens(user._id)
-  // console.log("accessToken " , accessToken ,"refreshToken-->", refreshToken)
-  if (!accessToken || !refreshToken) throw new ApiError(400, "tokens not generated")
+
   return res
     .status(200)
-    .cookie("accessToken" , accessToken , options)
-    .cookie("refreshToken" , refreshToken,options)
-    .json(new ApiResponse(200,user , "logged in "))
+    .cookie("accessToken", accessToken, COOKIE_OPTIONS)
+    .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
+    .json(new ApiResponse(200, { user: cleanUser, accessToken, refreshToken }, "logged in as user"));
+});
 
+/**
+ * googleAuthLogin
+ */
+const googleAuthLogin = asynchandler(async (req, res) => {
+  const { idToken_name, idToken_email } = req.body;
+  if (!idToken_email || !idToken_name) throw new ApiError(400, "google never sent token");
 
+  const payload_email = await verifyGoogleToken(idToken_email);
+  const payload_name = await verifyGoogleToken(idToken_name);
+  if (!payload_name) throw new ApiError(400, "google didnt verify name");
+  if (!payload_email) throw new ApiError(400, "google didnt verify_email");
 
+  const { email } = payload_email;
+  const { name, picture } = payload_name;
+  if (!email || !name) throw new ApiError(400, "google didnt send email or name");
+  if (!email.includes("@iiitnr.edu.in")) throw new ApiError(400, "enter the administered college email");
 
-})
-const completeProfile = asynchandler(async (req , res)=>{
-  /** @type {import("../models/user.model.js").User} */
+  const existingUser = await User.findOne({ email }).select("-password -refreshToken");
 
-  console.log("req.files-->" , req.files)
+  // cookie options reused
+  const cookieOptions = { ...COOKIE_OPTIONS };
 
-  const {department , isAdmin , researchInterest ,designation} = req.body
-  if (!department || !department.trim()|| !isAdmin || !isAdmin.trim() || !researchInterest|| !researchInterest.trim()) throw new ApiError(400 , "add details")
+  if (!existingUser) {
+    const created = await User.create({
+      fullName: name,
+      email,
+      username: email.split("@")[0] + "101",
+      avatar: picture || "",
+    });
+    if (!created) throw new ApiError(400, "user not created");
 
-
-  const local_path_coverimage = req?.file?.path
-  if (!local_path_coverimage) throw new ApiError(400 , "coverImage not fetched from multer")
-
-  const onCloud_coverImage = await upload(local_path_coverimage)
-
-
-  if (!onCloud_coverImage.url) throw new ApiError(400 , "coverImage not uploaded on cloudinary")
-  const bool_isAdmin = (typeof isAdmin === "string")
-    ? JSON.parse(isAdmin.toLowerCase())
-    : Boolean(isAdmin);
-  const array =[]
-  researchInterest.split(",").forEach((item)=>{
-    if (item.trim()) array.push(item.trim())
-  })
-  if (array.length===0) throw new ApiError(400 , "add some research interest")
-  const user = await User.findByIdAndUpdate(req.user._id, {
-    $set:{
-      department:department,
-      isAdmin:bool_isAdmin,
-      coverImage:onCloud_coverImage?.url || "",
-      researchInterests:array,
-      designation:designation
+    if (created?.email === process.env.ADMIN_EMAIL_CHECK) {
+      created.isAdmin = true;
+      await created.save({ validateBeforeSave: false });
     }
-  } ,{new:true})
-  if (!user) throw new ApiError(400 , "profile not completed")
- return  res.status(200)
-    .json(new ApiResponse(200,user , "profile updated"))
 
+    const { accessToken, refreshToken } = await generateAccessRefershTokens(created._id);
+    if (!accessToken || !refreshToken) throw new ApiError(400, "tokens not generated");
 
-})
+    const cleanCreated = await User.findById(created._id).select("-password -refreshToken");
 
-
-const  setPassword = asynchandler(async (req,res,next)=> {
-  const { new_password, confirm_password } = req.body
-  if (!new_password.trim() || !confirm_password.trim()) throw new ApiError(401, "np empty strings")
-  if (new_password !== confirm_password) throw new ApiError(400, "doest match with the confirm password")
-  const user = await User.findById(req?.user?._id)
-  if (!user) throw new ApiError(400, "user not fetched ")
-  user.password = new_password
-  await user.save({ validateBeforeSave: false })
-  return res.status(200)
-    .json(new ApiResponse(200, {}, "password set"))
-})
-
-
-const logout= asynchandler(async (req,res,_)=>{
-const user =await User.findByIdAndUpdate(req?.user?._id , {
-  // $set:{
-  //   refreshToken:undefined
-  // }
-  $unset: { refreshToken: 1 }
-} , {new:true}).select("-password")
-  const options = {
-  http: true,
-    secure: true
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, cookieOptions)
+      .cookie("refreshToken", refreshToken, cookieOptions)
+      .json(new ApiResponse(200, cleanCreated, "logged in"));
   }
-  return res.status(200)
-    .clearCookie("accessToken")
-    .clearCookie("refreshToken")
-    .json(new ApiResponse(200 , user , "logged out successfully"))
 
+  // existing user path
+  const { accessToken, refreshToken } = await generateAccessRefershTokens(existingUser._id);
+  if (!accessToken || !refreshToken) throw new ApiError(400, "tokens not generated");
 
+  const cleanUser = await User.findById(existingUser._id).select("-password -refreshToken");
 
-})
-const getUser =asynchandler(async (req , res )=>{
-  const user = await User.findById(req?.user?._id).select("-password -refreshToken")
-  return res.status(200).json(new ApiResponse(200 , user , "here are your details"))
-})
-const changePassword = asynchandler(async (req , res)=>{
-  const {original_password , new_password , confirm_password}  = req.body
-  if (!original_password.trim()||!new_password.trim() ||!confirm_password.trim()) throw new ApiError(401 , "np empty strings")
-  if (new_password!==confirm_password) throw new ApiError(400 , "doest match with the confirm password")
-
-  /** @type {import("../models/user.model.js").User} */
-
-
-  const user= await User.findById(req?.user?._id)
-  if (!user)  throw new ApiError(400 , "user not fetched ")
-  if (!(await user.isPasswordCorrect(original_password)))  throw new ApiError(400 , "password wrong")
-  user.password = new_password
-  user.save({validateBeforeSave:false})
-  return res.status(200)
-    .json(new ApiResponse(200 ,{} , "password changed"))
-
-})
-const refreshAccessTokens = asynchandler(async (req,res)=>{
-  /** @type {import("../models/user.model.js").User} */
-
-  const user = await User.findById(req.user._id).select('-password')
-  if (!user) throw new ApiError(401, "user no no no")
-  const token = req.cookies.refreshToken || req.body.refreshToken
-  if (!token) throw new ApiError(401, "noo token")
-  if (token !== user.refreshToken) throw new ApiError(500, "maslaa")
-  const { accessToken, refreshToken } = await generateAccessRefershTokens(req.user._id)
-
-  const options = {
-    http: true,
-    secure: true
-  }
   return res
     .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(new ApiResponse(200, {
-      user: user,
-      new_accessToken: accessToken,
-      new_refreshToken: refreshToken
-    }, "cookies updated"))
+    .cookie("accessToken", accessToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
+    .json(new ApiResponse(200, cleanUser, "logged in"));
+});
 
+/**
+ * completeProfile
+ */
+const completeProfile = asynchandler(async (req, res) => {
+  console.log("req.files-->", req.files);
 
+  const { department, isAdmin, researchInterest, designation } = req.body;
+  if (!department || !department.trim() || !isAdmin || !isAdmin.trim() || !researchInterest || !researchInterest.trim())
+    throw new ApiError(400, "add details");
 
+  const local_path_coverimage = req?.file?.path;
+  if (!local_path_coverimage) throw new ApiError(400, "coverImage not fetched from multer");
 
+  const onCloud_coverImage = await upload(local_path_coverimage);
+  if (!onCloud_coverImage?.url) throw new ApiError(400, "coverImage not uploaded on cloudinary");
 
-})
-const updateUserProfile = asynchandler(async (req,res)=>{
-  const {new_email,new_username} = req.body
-  if (!new_email.trimEnd() || !new_username.trim()) throw new ApiError(401 , "user please enter something")
-  if (!new_email.includes("@iiitnr.edu.in")) throw new ApiError(400, "enter the administered college email")
+  const bool_isAdmin = typeof isAdmin === "string" ? JSON.parse(isAdmin.toLowerCase()) : Boolean(isAdmin);
 
-  /** @type {import("../models/user.model.js").User} */
+  const array = [];
+  researchInterest.split(",").forEach((item) => {
+    if (item.trim()) array.push(item.trim());
+  });
+  if (array.length === 0) throw new ApiError(400, "add some research interest");
 
-  const user = await User.findByIdAndUpdate(req.user._id ,{
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        department,
+        isAdmin: bool_isAdmin,
+        coverImage: onCloud_coverImage?.url || "",
+        researchInterests: array,
+        designation,
+      },
+    },
+    { new: true }
+  );
+  if (!user) throw new ApiError(400, "profile not completed");
 
-    $set:{
-      email:new_email,
-      username:new_username
-    }
-  },{new:true})
+  return res.status(200).json(new ApiResponse(200, user, "profile updated"));
+});
 
-  return res.status(200)
-    .json(new ApiResponse(200 , user , "updated details"))
+/**
+ * setPassword
+ */
+const setPassword = asynchandler(async (req, res, next) => {
+  const { new_password, confirm_password } = req.body;
+  if (!new_password.trim() || !confirm_password.trim()) throw new ApiError(401, "np empty strings");
+  if (new_password !== confirm_password) throw new ApiError(400, "doest match with the confirm password");
 
+  const user = await User.findById(req?.user?._id);
+  if (!user) throw new ApiError(400, "user not fetched ");
 
+  user.password = new_password;
+  await user.save({ validateBeforeSave: false });
 
+  return res.status(200).json(new ApiResponse(200, {}, "password set"));
+});
 
+/**
+ * logout
+ */
+const logout = asynchandler(async (req, res, _) => {
+  const user = await User.findByIdAndUpdate(
+    req?.user?._id,
+    { $unset: { refreshToken: 1 } },
+    { new: true }
+  ).select("-password");
 
-})
+  return res
+    .status(200)
+    .clearCookie("accessToken", { path: "/", sameSite: "lax" })
+    .clearCookie("refreshToken", { path: "/", sameSite: "lax" })
+    .json(new ApiResponse(200, user, "logged out successfully"));
+});
 
-const updateAvatar = asynchandler(async (req,res)=>{
-  const local_path = req?.file?.path
-  if (!local_path) throw new ApiError(401 , "path not found")
-  const upload_ = await upload(local_path)
-  if (!upload_.url) throw new ApiError(401 , "not uploaded")
+/**
+ * getUser
+ */
+const getUser = asynchandler(async (req, res) => {
+  const user = await User.findById(req?.user?._id).select("-password -refreshToken");
+  return res.status(200).json(new ApiResponse(200, user, "here are your details"));
+});
 
-  /** @type {import("../models/user.model.js").User} */
+/**
+ * changePassword
+ */
+const changePassword = asynchandler(async (req, res) => {
+  const { original_password, new_password, confirm_password } = req.body;
+  if (!original_password.trim() || !new_password.trim() || !confirm_password.trim())
+    throw new ApiError(401, "np empty strings");
+  if (new_password !== confirm_password) throw new ApiError(400, "doest match with the confirm password");
 
-  const user = await User.findByIdAndUpdate(req.user._id , {
-    $set:{
-      avatar:upload_.url
-    }
-  },{new:true})
-  if (!user) throw new ApiError(400,"user not fetched")
-  console.log("user new avatar-->",user.avatar)
-  return res.status(200).json(new ApiResponse(200 , user , "avatar updated"))
+  const user = await User.findById(req?.user?._id);
+  if (!user) throw new ApiError(400, "user not fetched ");
+  if (!(await user.isPasswordCorrect(original_password))) throw new ApiError(400, "password wrong");
 
+  user.password = new_password;
+  await user.save({ validateBeforeSave: false });
 
-})
+  return res.status(200).json(new ApiResponse(200, {}, "password changed"));
+});
 
-const updateCoverImage = asynchandler(async (req,res)=>{
-  const local_path_ = req?.file?.path
-  if (!local_path_) throw new ApiError(401 , "path not found")
-  const upload_cover = await upload(local_path_)
-  if (!upload_cover.url) throw new ApiError(401 , "not uploaded")
+/**
+ * refreshAccessTokens
+ */
+const refreshAccessTokens = asynchandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select("-password");
+  if (!user) throw new ApiError(401, "user no no no");
 
-  /** @type {import("../models/user.model.js").User} */
+  const token = req.cookies?.refreshToken || req.body?.refreshToken;
+  if (!token) throw new ApiError(401, "noo token");
+  if (token !== user.refreshToken) throw new ApiError(500, "maslaa");
 
-  const user = await User.findByIdAndUpdate(req.user._id , {
-    $set:{
-      coverImage:upload_cover.url
-    }
-  },{new:true})
-  if (!user) throw new ApiError(400,"user not fetched")
-  return res.status(200).json(new ApiResponse(200 , user , "avatar updated"))
+  const { accessToken, refreshToken } = await generateAccessRefershTokens(req.user._id);
+  if (!accessToken || !refreshToken) throw new ApiError(400, "tokens not regenerated");
 
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, COOKIE_OPTIONS)
+    .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
+    .json(
+      new ApiResponse(
+        200,
+        { user: user, new_accessToken: accessToken, new_refreshToken: refreshToken },
+        "cookies updated"
+      )
+    );
+});
 
-})
-const deleteUser = asynchandler(async (req,res,next)=>{
-  const user = await User.findByIdAndDelete(req.user._id)
-  if (!user) throw new ApiError(401 , "sorry....user not deleted")
+/**
+ * updateUserProfile
+ */
+const updateUserProfile = asynchandler(async (req, res) => {
+  const { new_email, new_username } = req.body;
+  if (!new_email.trimEnd() || !new_username.trim()) throw new ApiError(401, "user please enter something");
+  if (!new_email.includes("@iiitnr.edu.in")) throw new ApiError(400, "enter the administered college email");
 
-  res.status(200)
-    .clearCookie("accessToken")
-    .clearCookie("refreshToken")
-    .json(new  ApiResponse(200,{},"logged out and deleted"))
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        email: new_email,
+        username: new_username,
+      },
+    },
+    { new: true }
+  );
 
-})
-const report = asynchandler(async (req,res)=>{
-  const {title = false ,authors =false, tag =false , publishedBy =false, publishedDate=false ,  citedBy=false} = req.body
-  const projectObject ={}
-  if (title === false) throw  new ApiError(400 , "naah")
-  if (title === true) {
-    projectObject.title = 1;
-  }
-  if (authors === true) {
-    projectObject.authors = 1;
-  }
-  if (tag === true) {
-    projectObject.tag = 1;
-  }
-  if (publishedBy === true) {
-    projectObject.publishedBy = 1;
-  }
-  if (publishedDate === true) {
-    projectObject.publishedDate = 1;
-  }
-  if (citedBy === true) {
-    projectObject.citedBy = 1;
-  }
-  projectObject.link =1
-  projectObject.manualUpload =1
+  return res.status(200).json(new ApiResponse(200, user, "updated details"));
+});
 
-  const paperReport = await User.aggregate([{
-    $match:{
-      _id: new  mongoose.Types.ObjectId(req.user._id)
-    }
-  },{
-    $lookup:{
-      from:"paper",
-      localField:"_id",
-      foreignField:"owner",
-      pipeline:[{
-        $addFields:{
-          link:{
-            $cond:{
-              if: {
-                $and: [
-                  { $ne: ["$link", null] },
-                  { $ne: ["$link", ""] }
-                ]
+/**
+ * updateAvatar
+ */
+const updateAvatar = asynchandler(async (req, res) => {
+  const local_path = req?.file?.path;
+  if (!local_path) throw new ApiError(401, "path not found");
+  const upload_ = await upload(local_path);
+  if (!upload_?.url) throw new ApiError(401, "not uploaded");
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: { avatar: upload_.url } },
+    { new: true }
+  );
+  if (!user) throw new ApiError(400, "user not fetched");
+
+  return res.status(200).json(new ApiResponse(200, user, "avatar updated"));
+});
+
+/**
+ * updateCoverImage
+ */
+const updateCoverImage = asynchandler(async (req, res) => {
+  const local_path_ = req?.file?.path;
+  if (!local_path_) throw new ApiError(401, "path not found");
+  const upload_cover = await upload(local_path_);
+  if (!upload_cover?.url) throw new ApiError(401, "not uploaded");
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: { coverImage: upload_cover.url } },
+    { new: true }
+  );
+  if (!user) throw new ApiError(400, "user not fetched");
+
+  return res.status(200).json(new ApiResponse(200, user, "cover updated"));
+});
+
+/**
+ * deleteUser
+ */
+const deleteUser = asynchandler(async (req, res, next) => {
+  const user = await User.findByIdAndDelete(req.user._id);
+  if (!user) throw new ApiError(401, "sorry....user not deleted");
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", { path: "/", sameSite: "lax" })
+    .clearCookie("refreshToken", { path: "/", sameSite: "lax" })
+    .json(new ApiResponse(200, {}, "logged out and deleted"));
+});
+
+/**
+ * report
+ */
+const report = asynchandler(async (req, res) => {
+  const { title = false, authors = false, tag = false, publishedBy = false, publishedDate = false, citedBy = false } = req.body;
+  const projectObject = {};
+  if (title === false) throw new ApiError(400, "naah");
+  if (title === true) projectObject.title = 1;
+  if (authors === true) projectObject.authors = 1;
+  if (tag === true) projectObject.tag = 1;
+  if (publishedBy === true) projectObject.publishedBy = 1;
+  if (publishedDate === true) projectObject.publishedDate = 1;
+  if (citedBy === true) projectObject.citedBy = 1;
+  projectObject.link = 1;
+  projectObject.manualUpload = 1;
+
+  const paperReport = await User.aggregate([
+    { $match: { _id: new mongoose.Types.ObjectId(req.user._id) } },
+    {
+      $lookup: {
+        from: "paper",
+        localField: "_id",
+        foreignField: "owner",
+        pipeline: [
+          {
+            $addFields: {
+              link: {
+                $cond: {
+                  if: { $and: [{ $ne: ["$link", null] }, { $ne: ["$link", ""] }] },
+                  then: "$link",
+                  else: "$$REMOVE",
+                },
               },
-              then:"$link",
-              else:"$$REMOVE"
-            }
-
+              manualUpload: {
+                $cond: {
+                  if: { $and: [{ $ne: ["$manualUpload", null] }, { $ne: ["$manualUpload", ""] }] },
+                  then: "$manualUpload",
+                  else: "$$REMOVE",
+                },
+              },
+            },
           },
-          manualUpload:{
-            $cond:{
-              if: {
-                $and: [
-                  { $ne: ["$manualUpload", null] },
-                  { $ne: ["$manualUpload", ""] }
-                ]
-              },
-              then:"$manualUpload",
-              else:"$$REMOVE"
-            }
+          { $project: projectObject },
+        ],
+        as: "details",
+      },
+    },
+    { $addFields: { count: { $size: "$details" } } },
+    { $project: { details: 1, count: 1 } },
+  ]);
 
-          }
-        }
-      },{
-        $project:projectObject
+  if (paperReport.length === 0 || paperReport[0].details.length === 0) throw new ApiError(400, "report not generated");
+  return res.status(200).json(new ApiResponse(200, paperReport[0], "report generated"));
+});
 
-      }],
+/**
+ * getAuthorScholar
+ */
+const getAuthorScholar = asynchandler(async (req, res) => {
+  const { authorId } = req.body;
+  if (!authorId || !authorId.trim()) throw new ApiError(400, "please enter author id");
 
-      as:"details",
+  const response = await authorScholarApi(authorId);
+  if (!response) throw new ApiError(400, "cant fetch author info");
+  const { stats, papers, author } = response;
+  if (!papers || papers.length === 0) throw new ApiError(500, "papers can be fetched");
 
+  for (let i = 0; i < papers.length; i++) {
+    const exists = await Paper.findOne({ link: papers[i].link, owner: req?.user?._id });
+    if (exists) continue;
 
-    }
-  },{
-    $addFields:{
-      count:{
-        $size:"$details"
-      }
+    const authors = [];
+    (papers[i]?.authors || "").split(",").forEach((a) => {
+      if (a.trim() !== "") authors.push(a.trim());
+    });
 
+    let classifiedAs = "conference";
+    const verdict = classifyPaper({ title: papers[i]?.title || "", publication: papers[i]?.publication || "" });
+    if (verdict !== "Other / Unknown") classifiedAs = verdict;
 
-
-    }
-  },{
-    $project:{
-      details:1,
-      count:1
-    }
-  }])
-  if (paperReport.length === 0 || paperReport[0].details.length === 0) throw new ApiError(400 , "report not generated")
-  return res.status(200)
-    .json(new ApiResponse(200 , paperReport[0], "report generated"))
-
-
-})
-
-const getAuthorScholar = asynchandler(async (req , res)=>{
-  const {authorId} = req.body
-  if(!authorId.trim()) throw new ApiError(400 , "please enter author id")
-
-
-  const response = await authorScholarApi(authorId)
-
-
-  if(!response) throw new ApiError(400 , "cant fetch author info");
-  const {stats , papers , author} = response
-
-  if(!papers || papers.length === 0 ) throw new ApiError(500 , "papers can be fetched")
-
-
-  for(let i  =0  ; i<papers.length ; i++) {
-    const exists = await Paper.findOne({
-      link:papers[i].link,
-      owner:req?.user?._id
-    })
-    if(exists) continue;
-
-    const authors = []
-    papers[i]?.authors.split(",").forEach(a => {
-      if (a.trim() !== "") authors.push(a.trim())
-    })
-    let classifiedAs =  "conference"
-    const verdict = classifyPaper({
-      title: papers[i]?.title || "",
-      publication: papers[i]?.publication || ""
-    })
-    if(verdict !== "Other / Unknown") classifiedAs = verdict
-
-    const tags = []
-    generateTags(papers[i]?.title || "" ).forEach(tag => {
-      if (tag.trim() !== "") tags.push(tag.trim().toLowerCase())
-    })
-    generateTags(papers[i]?.publication || "" ).forEach(tag => {
-      if (tag.trim() !== "" && !tags.includes(tag.trim())) tags.push(tag.trim().toLowerCase())
-    })
-
-
-
-
-
+    const tags = [];
+    generateTags(papers[i]?.title || "").forEach((tag) => {
+      if (tag.trim()) tags.push(tag.trim().toLowerCase());
+    });
+    generateTags(papers[i]?.publication || "").forEach((tag) => {
+      if (tag.trim() && !tags.includes(tag.trim())) tags.push(tag.trim().toLowerCase());
+    });
 
     try {
       const paper = await Paper.create({
-        title: papers[i]?.title  ,
+        title: papers[i]?.title,
         link: papers[i]?.link,
-        authors: authors,
+        authors,
         citedBy: papers[i]?.cited_by?.value,
         publishedBy: papers[i]?.publication,
-        publishedDate: new Date(Number(papers[i]?.year),0) || new Date(),
-        classifiedAs: classifiedAs,
+        publishedDate: new Date(Number(papers[i]?.year), 0) || new Date(),
+        classifiedAs,
         tag: tags,
-        owner: req?.user?._id
+        owner: req?.user?._id,
+      });
 
-
-      })
-
-      if(!paper) throw new ApiError(500 , "paper not stored")
-
-
-    } catch (e){
-      throw new ApiError(500, `mongoDb error---->${e.message}`)
-
+      if (!paper) throw new ApiError(500, "paper not stored");
+    } catch (e) {
+      throw new ApiError(500, `mongoDb error---->${e.message}`);
     }
   }
 
-  const userUpdate = await User.findByIdAndUpdate(req.user._id , {
-    $set:{
-      userBio:author,
-      userStats:stats
-    }
-  } , {new:true})
-  if (!userUpdate) throw new ApiError(500 , "user bio not updated")
+  const userUpdate = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: { userBio: author, userStats: stats } },
+    { new: true }
+  );
+  if (!userUpdate) throw new ApiError(500, "user bio not updated");
 
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      { stats, paperCount: papers.length, author },
+      `all papers of ${author.name} have been stored in the database`
+    )
+  );
+});
 
+/**
+ * getAuthorId
+ */
+const getAuthorId = asynchandler(async (req, res) => {
+  const { url } = req.body;
+  if (!url || typeof url !== "string") throw new ApiError(400, "URL is required in request body");
 
-  return res.status(200).json(new ApiResponse(200 , {
-    stats:stats,
-    paperCount: papers.length,
-    author: author
-  } , `all papers of ${author.name} have been stored in the database`))
+  const parsedUrl = new URL(url);
+  const authorId = parsedUrl.searchParams.get("user");
+  if (!authorId) throw new ApiError(400, "Author ID not found in provided URL");
 
+  return res.status(200).json(new ApiResponse(200, { authorId }, "Author ID extracted successfully"));
+});
 
-
-
-
-
-
-
-
-})
-
-
-const getAuthorId = asynchandler(async (req,res)=>{
-
-  const {url} = req.body;
-
-  if (!url || typeof url !== "string") {
-    throw new ApiError(400, "URL is required in request body");
-  }
-
-
-
-    const parsedUrl = new URL(url);
-    const authorId = parsedUrl.searchParams.get("user");
-
-    if (!authorId) {
-      throw new ApiError(400, "Author ID not found in provided URL");
-    }
-
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        { authorId },
-        "Author ID extracted successfully"
-      )
-    );
-
-
-
-
-})
-
-
-export { getAuthorId,  register_user , login_user , logout , getUser , changePassword , refreshAccessTokens,updateUserProfile,updateAvatar,updateCoverImage,deleteUser , report , googleAuthLogin , completeProfile , setPassword , getAuthorScholar}
+export {
+  getAuthorId,
+  register_user,
+  login_user,
+  logout,
+  getUser,
+  changePassword,
+  refreshAccessTokens,
+  updateUserProfile,
+  updateAvatar,
+  updateCoverImage,
+  deleteUser,
+  report,
+  googleAuthLogin,
+  completeProfile,
+  setPassword,
+  getAuthorScholar,
+};
