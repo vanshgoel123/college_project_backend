@@ -13,6 +13,15 @@ import { authorScholarApi } from "../utilities/scholar.js";
 import { Paper } from "../models/paper.model.js";
 import generateTags from "../utilities/getTag.js";
 import classifyPaper from "../utilities/classifyPaper.js";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  HeadingLevel,
+  TextRun,
+} from "docx";
+import fs from "fs";
+import path from "path";
 
 const generateAccessRefershTokens = async function(_id){
   try{
@@ -120,7 +129,7 @@ const login_user = asynchandler(async (req , res ,_)=>{
   if (!isCorrect) throw new ApiError(401 , "password is wrong")
   const {accessToken , refreshToken} = await generateAccessRefershTokens(user._id)
   const options = {
-    http:true,
+    httpOnly:true,
     secure:true
   }
   user.refreshToken = ""
@@ -188,7 +197,7 @@ if (!idToken_email || !idToken_name) throw new ApiError(400 , "google never sent
     await created.save({validateBeforeSave:false})
   }
     const option = {
-      http:true,
+      httpOnly:true,
       secure:true
     }
     const {accessToken,refreshToken} =await generateAccessRefershTokens(created._id)
@@ -206,7 +215,7 @@ if (!idToken_email || !idToken_name) throw new ApiError(400 , "google never sent
 
   }
   const options = {
-    http:true,
+    httpOnly:true,
     secure:true
   }
   const {accessToken,refreshToken} = await generateAccessRefershTokens(user._id)
@@ -420,7 +429,7 @@ const deleteUser = asynchandler(async (req,res,next)=>{
 const report = asynchandler(async (req,res)=>{
   const {title = false ,authors =false, tag =false , publishedBy =false, publishedDate=false ,  citedBy=false} = req.body
   const projectObject ={}
-  if (title === false) throw  new ApiError(400 , "naah")
+  
   if (title === true) {
     projectObject.title = 1;
   }
@@ -505,8 +514,99 @@ const report = asynchandler(async (req,res)=>{
     }
   }])
   if (paperReport.length === 0 || paperReport[0].details.length === 0) throw new ApiError(400 , "report not generated")
-  return res.status(200)
-    .json(new ApiResponse(200 , paperReport[0], "report generated"))
+
+
+  const reportData = paperReport[0].details;
+
+  const FIELD_MAP = {
+    title: { label: "Title", enabled: title },
+    authors: { label: "Authors", enabled: authors },
+    tag: { label: "Tag", enabled: tag },
+    publishedBy: { label: "Published By", enabled: publishedBy },
+    publishedDate: { label: "Published Date", enabled: publishedDate },
+    citedBy: { label: "Cited By", enabled: citedBy },
+    link: { label: "Link", enabled: true }, // always included
+    manualUpload: { label: "Manual Upload", enabled: true }, // always included
+  };
+
+
+  const doc = new Document({
+    sections: [
+      {
+        children: [
+          new Paragraph({
+            text: "Research Paper Report",
+            heading: HeadingLevel.TITLE,
+          }),
+
+          ...reportData.flatMap((paper, index) => {
+            const block = [];
+
+            // Title as heading if enabled
+            if (FIELD_MAP.title.enabled && paper.title) {
+              block.push(
+                new Paragraph({
+                  heading: HeadingLevel.HEADING_2,
+                  text: `${index + 1}. ${paper.title}`,
+                })
+              );
+            } else {
+              // If title disabled, still show numbering
+              block.push(
+                new Paragraph({
+                  heading: HeadingLevel.HEADING_2,
+                  text: `${index + 1}.`,
+                })
+              );
+            }
+
+            // Dynamically add all enabled fields
+            for (const key in FIELD_MAP) {
+              const { label, enabled } = FIELD_MAP[key];
+              if (!enabled) continue;
+              if (!paper[key]) continue;
+
+              if (Array.isArray(paper[key])) {
+                block.push(
+                  new Paragraph({
+                    children: [
+                      new TextRun({ text: `${label}: `, bold: true }),
+                      new TextRun(paper[key].join(", ")),
+                    ],
+                  })
+                );
+              } else {
+                block.push(
+                  new Paragraph({
+                    children: [
+                      new TextRun({ text: `${label}: `, bold: true }),
+                      new TextRun(String(paper[key])),
+                    ],
+                  })
+                );
+              }
+            }
+
+            block.push(new Paragraph("")); // spacing
+            return block;
+          }),
+        ],
+      },
+    ],
+  });
+
+  const buffer = await Packer.toBuffer(doc);
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  );
+
+  res.setHeader(
+    "Content-Disposition",
+    "attachment; filename=report.docx"
+  );
+
+  return res.send(buffer);
 
 
 })
@@ -636,6 +736,7 @@ const getAuthorId = asynchandler(async (req,res)=>{
 
 
 })
+
 
 
 export { getAuthorId,  register_user , login_user , logout , getUser , changePassword , refreshAccessTokens,updateUserProfile,updateAvatar,updateCoverImage,deleteUser , report , googleAuthLogin , completeProfile , setPassword , getAuthorScholar}
