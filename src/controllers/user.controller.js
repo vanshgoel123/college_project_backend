@@ -120,7 +120,7 @@ const login_user = asynchandler(async (req , res ,_)=>{
   if (!isCorrect) throw new ApiError(401 , "password is wrong")
   const {accessToken , refreshToken} = await generateAccessRefershTokens(user._id)
   const options = {
-    http:true,
+    httpOnly:true,
     secure:true
   }
   user.refreshToken = ""
@@ -188,7 +188,7 @@ if (!idToken_email || !idToken_name) throw new ApiError(400 , "google never sent
     await created.save({validateBeforeSave:false})
   }
     const option = {
-      http:true,
+      httpOnly:true,
       secure:true
     }
     const {accessToken,refreshToken} =await generateAccessRefershTokens(created._id)
@@ -206,7 +206,7 @@ if (!idToken_email || !idToken_name) throw new ApiError(400 , "google never sent
 
   }
   const options = {
-    http:true,
+    httpOnly:true,
     secure:true
   }
   const {accessToken,refreshToken} = await generateAccessRefershTokens(user._id)
@@ -284,7 +284,7 @@ const user =await User.findByIdAndUpdate(req?.user?._id , {
   $unset: { refreshToken: 1 }
 } , {new:true}).select("-password")
   const options = {
-  http: true,
+  httpOnly: true,
     secure: true
   }
   return res.status(200)
@@ -327,7 +327,7 @@ const refreshAccessTokens = asynchandler(async (req,res)=>{
   const { accessToken, refreshToken } = await generateAccessRefershTokens(req.user._id)
 
   const options = {
-    http: true,
+    httpOnly: true,
     secure: true
   }
   return res
