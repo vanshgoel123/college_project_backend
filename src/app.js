@@ -6,6 +6,7 @@ import { rate_limit } from "./middlewares/ratelimiter.middleware.js";
 console.log("cors---->",process.env.CORS_ORIGIN)
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(cors({
   origin: "https://172.16.61.173",
   credentials: true,
