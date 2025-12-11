@@ -222,6 +222,11 @@ const searchPaper = asynchandler(async (req,res)=>{
         $project:{
           title:1,
           link:1,
+          authors:1,
+          tag:1,
+          citedBy:1,
+          publishedBy:1,
+          publishedDate:1,
           manualUpload:1,
 
 

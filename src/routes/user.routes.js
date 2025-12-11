@@ -50,3 +50,4 @@ userRoutes.route("/delete").delete(jwt_auth , deleteUser)
 //every controller tested except report....
 export default userRoutes
 // add forgot password and user mail verification
+// add destroy me
