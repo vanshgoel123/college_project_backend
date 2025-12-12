@@ -429,7 +429,7 @@ const deleteUser = asynchandler(async (req,res,next)=>{
 const report = asynchandler(async (req,res)=>{
   const {title = false ,authors =false, tag =false , publishedBy =false, publishedDate=false ,  citedBy=false} = req.body
   const projectObject ={}
-  
+
   if (title === true) {
     projectObject.title = 1;
   }
@@ -623,62 +623,125 @@ const getAuthorScholar = asynchandler(async (req , res)=>{
   const {stats , papers , author} = response
 
   if(!papers || papers.length === 0 ) throw new ApiError(500 , "papers can be fetched")
+  
+  const userPapers = await Paper.find({
+    owner:req?.user?._id
+  }).select("link")
+  if(userPapers.length !== 0){
+    for (let i = 0; i < papers.length; i++) {
+      const p = papers[i]
+      for (let j = 0; j < userPapers.length; j++) {
+        if(p?.link.trim() === userPapers[j]?.link.trim()){
+          papers.splice(i ,1)
+        }
 
+      }
 
-  for(let i  =0  ; i<papers.length ; i++) {
-    const exists = await Paper.findOne({
-      link:papers[i].link,
-      owner:req?.user?._id
-    })
-    if(exists) continue;
+    }
+    
+  }
 
+  if(papers.length === 0) throw new ApiError(400 , "all papers already exist in the database")
+
+  const formatedPapers=[]
+
+  papers.forEach((item)=>{
     const authors = []
-    papers[i]?.authors.split(",").forEach(a => {
+    item?.authors.split(",").forEach(a => {
       if (a.trim() !== "") authors.push(a.trim())
     })
     let classifiedAs =  "conference"
     const verdict = classifyPaper({
-      title: papers[i]?.title || "",
-      publication: papers[i]?.publication || ""
+      title: item?.title || "",
+      publication: item?.publication || ""
     })
     if(verdict !== "Other / Unknown") classifiedAs = verdict
 
     const tags = []
-    generateTags(papers[i]?.title || "" ).forEach(tag => {
+    generateTags(item?.title || "" ).forEach(tag => {
       if (tag.trim() !== "") tags.push(tag.trim().toLowerCase())
     })
-    generateTags(papers[i]?.publication || "" ).forEach(tag => {
+    generateTags(item?.publication || "" ).forEach(tag => {
       if (tag.trim() !== "" && !tags.includes(tag.trim())) tags.push(tag.trim().toLowerCase())
     })
 
+    formatedPapers.push({
+      title: item?.title  ,
+      link: item?.link,
+      authors: authors,
+      citedBy: item?.cited_by?.value,
+      publishedBy: item?.publication,
+      publishedDate: new Date(Number(item?.year),0) || new Date(),
+      classifiedAs: classifiedAs,
+      tag: tags,
+      owner: req?.user?._id
+
+
+    })
 
 
 
+  })
+
+  const createPapers = await Paper.insertMany(formatedPapers)
+  if(!createPapers || createPapers.length ===0) throw new ApiError(500 , "papers not stored")
 
 
-    try {
-      const paper = await Paper.create({
-        title: papers[i]?.title  ,
-        link: papers[i]?.link,
-        authors: authors,
-        citedBy: papers[i]?.cited_by?.value,
-        publishedBy: papers[i]?.publication,
-        publishedDate: new Date(Number(papers[i]?.year),0) || new Date(),
-        classifiedAs: classifiedAs,
-        tag: tags,
-        owner: req?.user?._id
 
-
-      })
-
-      if(!paper) throw new ApiError(500 , "paper not stored")
-
-
-    } catch (e){
-      throw new ApiError(500, `mongoDb error---->${e.message}`)
-
-    }
-  }
+  // for(let i  =0  ; i<papers.length ; i++) {
+  //   // const exists = await Paper.findOne({
+  //   //   link:papers[i].link,
+  //   //   owner:req?.user?._id
+  //   // })
+  //   // if(exists) continue;
+  //
+  //   const authors = []
+  //   papers[i]?.authors.split(",").forEach(a => {
+  //     if (a.trim() !== "") authors.push(a.trim())
+  //   })
+  //   let classifiedAs =  "conference"
+  //   const verdict = classifyPaper({
+  //     title: papers[i]?.title || "",
+  //     publication: papers[i]?.publication || ""
+  //   })
+  //   if(verdict !== "Other / Unknown") classifiedAs = verdict
+  //
+  //   const tags = []
+  //   generateTags(papers[i]?.title || "" ).forEach(tag => {
+  //     if (tag.trim() !== "") tags.push(tag.trim().toLowerCase())
+  //   })
+  //   generateTags(papers[i]?.publication || "" ).forEach(tag => {
+  //     if (tag.trim() !== "" && !tags.includes(tag.trim())) tags.push(tag.trim().toLowerCase())
+  //   })
+  //
+  //
+  //
+  //
+  //
+  //
+  //   try {
+  //     const paper = await Paper.create({
+  //       title: papers[i]?.title  ,
+  //       link: papers[i]?.link,
+  //       authors: authors,
+  //       citedBy: papers[i]?.cited_by?.value,
+  //       publishedBy: papers[i]?.publication,
+  //       publishedDate: new Date(Number(papers[i]?.year),0) || new Date(),
+  //       classifiedAs: classifiedAs,
+  //       tag: tags,
+  //       owner: req?.user?._id
+  //
+  //
+  //     })
+  //
+  //     if(!paper) throw new ApiError(500 , "paper not stored")
+  //
+  //
+  //   } catch (e){
+  //     throw new ApiError(500, `mongoDb error---->${e.message}`)
+  //
+  //   }
+  // }
 
   const userUpdate = await User.findByIdAndUpdate(req.user._id , {
     $set:{
@@ -691,9 +754,9 @@ const getAuthorScholar = asynchandler(async (req , res)=>{
 
 
   return res.status(200).json(new ApiResponse(200 , {
-    stats:stats,
-    paperCount: papers.length,
-    author: author
+    stats:stats || {},
+    paperCount: formatedPapers.length,
+    author: author || {}
   } , `all papers of ${author.name} have been stored in the database`))
 
 
@@ -714,6 +777,20 @@ const getAuthorId = asynchandler(async (req,res)=>{
   if (!url || typeof url !== "string") {
     throw new ApiError(400, "URL is required in request body");
   }
+  if(req?.user?.userProfileLink && req?.user?.userProfileLink.trim() !== url.trim()){
+    throw new ApiError(400 , "you have already set your profile link , cannot change it")
+  }
+  const isLinkAlreadyThere = await User.findOne({userProfileLink: url.trim()})
+  if(isLinkAlreadyThere && isLinkAlreadyThere._id !== req?.user?._id) throw new ApiError(400 , "this profile link is already associated with another user")
+
+
+
+  const user = await User.findByIdAndUpdate(req?.user?._id , {
+    $set:{
+      userProfileLink:url.trim()
+    }
+  } , {new:true}).select("-password -refreshToken")
+  if (!user) throw new ApiError(400, "user not found to update profile link");
 
 
 
