@@ -34,7 +34,7 @@ userRoutes.route("/authorProfile").post(jwt_auth , getAuthorScholar)
 userRoutes.route("/getAuthorID").post(jwt_auth, getAuthorId)
 //get
 userRoutes.route("/getUser").get(jwt_auth, getUser)
-userRoutes.route("/report").get(jwt_auth,report)
+userRoutes.route("/report").post(jwt_auth,report)
 
 
 //patch
