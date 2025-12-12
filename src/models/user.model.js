@@ -67,6 +67,10 @@ const userModel = new Schema({
   userStats:{
     type:Object,
     default:{}
+  } ,
+  userProfileLink:{
+    type:String,
+    trim:true
   }
 
 
