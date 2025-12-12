@@ -8,7 +8,7 @@ console.log("cors---->",process.env.CORS_ORIGIN)
 const app = express();
 app.set("trust proxy", 1);
 app.use(cors({
-  origin: "https://172.16.61.173",
+  origin: "https://scholar.iiitnr.ac.in",
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"]
