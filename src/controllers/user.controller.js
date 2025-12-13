@@ -17,8 +17,11 @@ import {
   Document,
   Packer,
   Paragraph,
-  HeadingLevel,
   TextRun,
+  HeadingLevel,
+  AlignmentType,
+  ExternalHyperlink,
+  BorderStyle
 } from "docx";
 import fs from "fs";
 import path from "path";
@@ -426,95 +429,76 @@ const deleteUser = asynchandler(async (req,res,next)=>{
     .json(new  ApiResponse(200,{},"logged out and deleted"))
 
 })
-const report = asynchandler(async (req,res)=>{
-  const {title = false ,authors =false, tag =false , publishedBy =false, publishedDate=false ,  citedBy=false} = req.body
-  const projectObject ={}
+const report = asynchandler(async (req, res) => {
+  const {
+    title = false,
+    authors = false,
+    tag = false,
+    publishedBy = false,
+    publishedDate = false,
+    citedBy = false,
+  } = req.body;
 
-  if (title === true) {
-    projectObject.title = 1;
-  }
-  if (authors === true) {
-    projectObject.authors = 1;
-  }
-  if (tag === true) {
-    projectObject.tag = 1;
-  }
-  if (publishedBy === true) {
-    projectObject.publishedBy = 1;
-  }
-  if (publishedDate === true) {
-    projectObject.publishedDate = 1;
-  }
-  if (citedBy === true) {
-    projectObject.citedBy = 1;
-  }
-  projectObject.link =1
-  projectObject.manualUpload =1
+  const projectObject = {};
 
-  const paperReport = await User.aggregate([{
-    $match:{
-      _id: new  mongoose.Types.ObjectId(req.user._id)
-    }
-  },{
-    $lookup:{
-      from:"paper",
-      localField:"_id",
-      foreignField:"owner",
-      pipeline:[{
-        $addFields:{
-          link:{
-            $cond:{
-              if: {
-                $and: [
-                  { $ne: ["$link", null] },
-                  { $ne: ["$link", ""] }
-                ]
+  if (title === true) projectObject.title = 1;
+  if (authors === true) projectObject.authors = 1;
+  if (tag === true) projectObject.tag = 1;
+  if (publishedBy === true) projectObject.publishedBy = 1;
+  if (publishedDate === true) projectObject.publishedDate = 1;
+  if (citedBy === true) projectObject.citedBy = 1;
+
+  // Always include URLs
+  projectObject.link = 1;
+  projectObject.manualUpload = 1;
+
+  const paperReport = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "paper",
+        localField: "_id",
+        foreignField: "owner",
+        pipeline: [
+          {
+            $addFields: {
+              link: {
+                $cond: {
+                  if: { $and: [{ $ne: ["$link", null] }, { $ne: ["$link", ""] }] },
+                  then: "$link",
+                  else: "$$REMOVE",
+                },
               },
-              then:"$link",
-              else:"$$REMOVE"
-            }
-
+              manualUpload: {
+                $cond: {
+                  if: { $and: [{ $ne: ["$manualUpload", null] }, { $ne: ["$manualUpload", ""] }] },
+                  then: "$manualUpload",
+                  else: "$$REMOVE",
+                },
+              },
+            },
           },
-          manualUpload:{
-            $cond:{
-              if: {
-                $and: [
-                  { $ne: ["$manualUpload", null] },
-                  { $ne: ["$manualUpload", ""] }
-                ]
-              },
-              then:"$manualUpload",
-              else:"$$REMOVE"
-            }
+          {
+            $project: projectObject,
+          },
+        ],
+        as: "details",
+      },
+    },
+    {
+      $addFields: { count: { $size: "$details" } },
+    },
+    {
+      $project: { details: 1, count: 1 },
+    },
+  ]);
 
-          }
-        }
-      },{
-        $project:projectObject
-
-      }],
-
-      as:"details",
-
-
-    }
-  },{
-    $addFields:{
-      count:{
-        $size:"$details"
-      }
-
-
-
-    }
-  },{
-    $project:{
-      details:1,
-      count:1
-    }
-  }])
-  if (paperReport.length === 0 || paperReport[0].details.length === 0) throw new ApiError(400 , "report not generated")
-
+  if (!paperReport.length || !paperReport[0].details.length)
+    throw new ApiError(400, "report not generated");
 
   const reportData = paperReport[0].details;
 
@@ -525,10 +509,9 @@ const report = asynchandler(async (req,res)=>{
     publishedBy: { label: "Published By", enabled: publishedBy },
     publishedDate: { label: "Published Date", enabled: publishedDate },
     citedBy: { label: "Cited By", enabled: citedBy },
-    link: { label: "Link", enabled: true }, // always included
-    manualUpload: { label: "Manual Upload", enabled: true }, // always included
+    link: { label: "Link", enabled: true },
+    manualUpload: { label: "Manual Upload", enabled: true },
   };
-
 
   const doc = new Document({
     sections: [
@@ -542,30 +525,39 @@ const report = asynchandler(async (req,res)=>{
           ...reportData.flatMap((paper, index) => {
             const block = [];
 
-            // Title as heading if enabled
-            if (FIELD_MAP.title.enabled && paper.title) {
-              block.push(
-                new Paragraph({
-                  heading: HeadingLevel.HEADING_2,
-                  text: `${index + 1}. ${paper.title}`,
-                })
-              );
-            } else {
-              // If title disabled, still show numbering
-              block.push(
-                new Paragraph({
-                  heading: HeadingLevel.HEADING_2,
-                  text: `${index + 1}.`,
-                })
-              );
-            }
+            // Heading
+            block.push(
+              new Paragraph({
+                heading: HeadingLevel.HEADING_2,
+                text: `${index + 1}. ${FIELD_MAP.title.enabled ? paper.title || "" : ""}`,
+              })
+            );
 
-            // Dynamically add all enabled fields
+            // Add all enabled fields
             for (const key in FIELD_MAP) {
               const { label, enabled } = FIELD_MAP[key];
-              if (!enabled) continue;
-              if (!paper[key]) continue;
+              if (!enabled || !paper[key]) continue;
 
+              // Special handling for URLs
+              if (key === "link" || key === "manualUpload") {
+                block.push(
+                  new Paragraph({
+                    children: [
+                      new TextRun({ text: `${label}:`, bold: true }),
+                      new TextRun({ break: 1 }), // Move URL to next line
+                      new TextRun({
+                        text: paper[key],
+                        style: "Hyperlink", // clickable link
+                      }),
+                    ],
+                  })
+                );
+
+                block.push(new Paragraph("")); // spacing
+                continue;
+              }
+
+              // Normal text fields
               if (Array.isArray(paper[key])) {
                 block.push(
                   new Paragraph({
@@ -595,21 +587,18 @@ const report = asynchandler(async (req,res)=>{
     ],
   });
 
+  // Generate DOCX
   const buffer = await Packer.toBuffer(doc);
+
   res.setHeader(
     "Content-Type",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
   );
-
-  res.setHeader(
-    "Content-Disposition",
-    "attachment; filename=report.docx"
-  );
+  res.setHeader("Content-Disposition", "attachment; filename=report.docx");
 
   return res.send(buffer);
+});
 
-
-})
 
 const getAuthorScholar = asynchandler(async (req , res)=>{
   const {authorId} = req.body
