@@ -18,7 +18,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "test":"jest"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
@@ -41,5 +42,9 @@
     "multer": "^2.0.2",
     "nodemon": "^3.1.10",
     "prettier": "^3.6.2"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4"
   }
 }

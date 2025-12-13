@@ -6,6 +6,9 @@ import { rate_limit } from "./middlewares/ratelimiter.middleware.js";
 console.log("cors---->",process.env.CORS_ORIGIN)
 
 const app = express();
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 app.set("trust proxy", 1);
 app.use(cors({
   origin: "https://scholar.iiitnr.ac.in",
@@ -48,4 +51,6 @@ app.use("/api/v1/admin" , adminRoute)
 import portfolioRoutes from "./routes/portfolio.routes.js";
 
 app.use("/api/v1/portfolio", portfolioRoutes)
+
+
 export {app}
