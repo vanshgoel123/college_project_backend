@@ -28,7 +28,7 @@ const from_To = asynchandler(async (req , res)=>{
   const {from , to} = req.body
   if(!from || !from.trim() || !to || !to.trim()) throw new ApiError(400 , "all fields required")
 
-  const start = new Date(`${parseInt(from.trim())}-01-01`)
+  const start = new Date(`${parseInt(from.trim())-1}-01-01`)
   const end = new Date(`${parseInt(to.trim())}-01-01`) // will be included
 
   const papers = await Paper.aggregate([{
