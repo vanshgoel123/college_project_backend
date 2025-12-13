@@ -25,6 +25,12 @@ import {
 } from "docx";
 import fs from "fs";
 import path from "path";
+import { Patent } from "../models/patent.model.js";
+import { Project } from "../models/project.model.js";
+import { Group } from "../models/group.model.js";
+import { Attachment } from "../models/attachment.model.js";
+import { Note } from "../models/note.model.js";
+import { Star } from "../models/star.model.js";
 
 const generateAccessRefershTokens = async function(_id){
   try{
@@ -420,8 +426,15 @@ const updateCoverImage = asynchandler(async (req,res)=>{
 
 })
 const deleteUser = asynchandler(async (req,res,next)=>{
-  const user = await User.findByIdAndDelete(req.user._id)
-  if (!user) throw new ApiError(401 , "sorry....user not deleted")
+  const user = await User.deleteOne({_id:req?.user?._id})
+  const papers = await Paper.deleteMany({owner:req?.user?._id})
+  const patents = await Patent.deleteMany({owner:req?.user?._id})
+  const project = await Project.deleteMany({owner:req?.user?._id})
+  const group = await Group.deleteMany({owner:req?.user?._id})
+  const attachment = await Attachment.deleteMany({createdBy:req?.user?._id})
+  const notes = await Note.deleteMany({createdBy:req?.user?._id})
+  const star = await Star.deleteMany({ staredBy: req?.user?._id})
+
 
   res.status(200)
     .clearCookie("accessToken")
@@ -616,25 +629,27 @@ const getAuthorScholar = asynchandler(async (req , res)=>{
   const userPapers = await Paper.find({
     owner:req?.user?._id
   }).select("link")
-  if(userPapers.length !== 0){
-    for (let i = 0; i < papers.length; i++) {
-      const p = papers[i]
-      for (let j = 0; j < userPapers.length; j++) {
-        if(p?.link.trim() === userPapers[j]?.link.trim()){
-          papers.splice(i ,1)
-        }
 
-      }
+  const existingLinks = new Set(
+    userPapers
+      .map(p => p.link)
+      .filter(Boolean)
+      .map(l => l.trim())
+  )
 
-    }
-    
+  const filteredPapers = papers.filter(p => {
+    if (!p?.link) return false;
+    return !existingLinks.has(p.link.trim());
+  }) // create a new array  , original ko mutate  nai krta
+
+  if (filteredPapers.length === 0) {
+    throw new ApiError(400, "all papers already exist in the database");
   }
 
-  if(papers.length === 0) throw new ApiError(400 , "all papers already exist in the database")
 
   const formatedPapers=[]
 
-  papers.forEach((item)=>{
+  filteredPapers.forEach((item)=>{
     const authors = []
     item?.authors.split(",").forEach(a => {
       if (a.trim() !== "") authors.push(a.trim())
@@ -677,60 +692,7 @@ const getAuthorScholar = asynchandler(async (req , res)=>{
 
 
 
-  // for(let i  =0  ; i<papers.length ; i++) {
-  //   // const exists = await Paper.findOne({
-  //   //   link:papers[i].link,
-  //   //   owner:req?.user?._id
-  //   // })
-  //   // if(exists) continue;
-  //
-  //   const authors = []
-  //   papers[i]?.authors.split(",").forEach(a => {
-  //     if (a.trim() !== "") authors.push(a.trim())
-  //   })
-  //   let classifiedAs =  "conference"
-  //   const verdict = classifyPaper({
-  //     title: papers[i]?.title || "",
-  //     publication: papers[i]?.publication || ""
-  //   })
-  //   if(verdict !== "Other / Unknown") classifiedAs = verdict
-  //
-  //   const tags = []
-  //   generateTags(papers[i]?.title || "" ).forEach(tag => {
-  //     if (tag.trim() !== "") tags.push(tag.trim().toLowerCase())
-  //   })
-  //   generateTags(papers[i]?.publication || "" ).forEach(tag => {
-  //     if (tag.trim() !== "" && !tags.includes(tag.trim())) tags.push(tag.trim().toLowerCase())
-  //   })
-  //
-  //
-  //
-  //
-  //
-  //
-  //   try {
-  //     const paper = await Paper.create({
-  //       title: papers[i]?.title  ,
-  //       link: papers[i]?.link,
-  //       authors: authors,
-  //       citedBy: papers[i]?.cited_by?.value,
-  //       publishedBy: papers[i]?.publication,
-  //       publishedDate: new Date(Number(papers[i]?.year),0) || new Date(),
-  //       classifiedAs: classifiedAs,
-  //       tag: tags,
-  //       owner: req?.user?._id
-  //
-  //
-  //     })
-  //
-  //     if(!paper) throw new ApiError(500 , "paper not stored")
-  //
-  //
-  //   } catch (e){
-  //     throw new ApiError(500, `mongoDb error---->${e.message}`)
-  //
-  //   }
-  // }
+
 
   const userUpdate = await User.findByIdAndUpdate(req.user._id , {
     $set:{
@@ -769,8 +731,9 @@ const getAuthorId = asynchandler(async (req,res)=>{
   if(req?.user?.userProfileLink && req?.user?.userProfileLink.trim() !== url.trim()){
     throw new ApiError(400 , "you have already set your profile link , cannot change it")
   }
-  const isLinkAlreadyThere = await User.findOne({userProfileLink: url.trim()})
-  if(isLinkAlreadyThere && isLinkAlreadyThere._id !== req?.user?._id) throw new ApiError(400 , "this profile link is already associated with another user")
+
+  // const isLinkAlreadyThere = await User.findOne({userProfileLink: url.trim()})
+  // if(isLinkAlreadyThere && isLinkAlreadyThere._id !== new mongoose.Types.ObjectId( req?.user?._id)) throw new ApiError(400 , "this profile link is already associated with another user")
 
 
 
